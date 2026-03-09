@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Meet Me",
+    "slug": "meetme",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "meetme",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.meetme.app"
+    },
+    "android": {
+      "package": "com.meetme.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

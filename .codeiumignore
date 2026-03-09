@@ -1,0 +1,13 @@
+node_modules/
+.expo/
+dist/
+build/
+.next/
+coverage/
+.env
+.env.local
+*.log
+android/
+ios/
+tmp/
+.cache/

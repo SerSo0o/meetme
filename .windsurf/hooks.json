@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "pre_run_command": [
+      {
+        "command": "python3 .windsurf/scripts/block_dangerous_commands.py",
+        "show_output": true
+      }
+    ]
+  }
+}
