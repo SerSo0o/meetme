@@ -12,6 +12,7 @@ npm-debug.*
 *.orig.*
 .env
 .env.local
+.windsurf/mcp_config.json
 *.log
 android/
 ios/

@@ -62,6 +62,20 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          title: "Edit Profile",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="privacy-settings"
+        options={{
+          title: "Privacy Settings",
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

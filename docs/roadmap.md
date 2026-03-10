@@ -17,10 +17,14 @@
 - profile tab shows user info + sign out
 - pending: connect to live Supabase project + run migration
 
-## Phase 3
-- status system
-- profile editing
-- privacy preferences
+## Phase 3 ✓
+- Status system: Green (open) / Yellow (busy) / Red (ghost) manual toggle
+- Extended profile: age, gender, interest tags
+- Edit Profile screen with interest picker
+- Privacy Settings screen (show distance, show on map, discoverable)
+- StatusToggle + InterestPicker reusable components
+- 4 new/altered tables: profiles (altered), interests, profile_interests, privacy_preferences
+- All tables with RLS, 20 seeded interests
 
 ## Phase 4
 - nearby list / cards
