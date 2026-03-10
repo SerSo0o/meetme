@@ -26,8 +26,17 @@
 - 4 new/altered tables: profiles (altered), interests, profile_interests, privacy_preferences
 - All tables with RLS, 20 seeded interests
 
-## Phase 4
-- nearby list / cards
+## Phase 4 ✓
+- PostGIS-powered location + spatial discovery (3km radius)
+- Private user_locations table (own-only RLS, never exposed)
+- discover_nearby_users() RPC: approximate distance (rounded 50m), filters Red/non-discoverable
+- Location collection via expo-location (on app open + every 15 min)
+- Photo-first discovery cards (2-column grid)
+- Bottom sheet profile detail on tap
+- Avatar upload via expo-image-picker + Supabase Storage
+- Distance labels: Very close / Nearby / ~1km / ~2km / ~3km
+- Empty states: no permission, no users nearby
+- Pull-to-refresh on discovery list
 
 ## Phase 5
 - privacy-safe map presence

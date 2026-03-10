@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
+import { LocationProvider } from "@/providers/LocationProvider";
 
 function AuthGate() {
   const { session, profile, isLoading } = useAuth();
@@ -39,9 +41,13 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="auto" />
-      <AuthGate />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <LocationProvider>
+          <StatusBar style="auto" />
+          <AuthGate />
+        </LocationProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

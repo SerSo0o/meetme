@@ -8,10 +8,14 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/providers/AuthProvider";
 import { updateProfile, getAllInterests, getProfileInterests, setProfileInterests } from "@/lib/profile";
+import { uploadAvatar } from "@/lib/storage";
 import { InterestPicker } from "@/components/InterestPicker";
 import type { Gender, Interest } from "@/types/profile";
 
@@ -24,7 +28,7 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
 ];
 
 export default function EditProfileScreen() {
-  const { profile, refreshProfile } = useAuth();
+  const { session, profile, refreshProfile } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -34,6 +38,7 @@ export default function EditProfileScreen() {
   const [allInterests, setAllInterests] = useState<Interest[]>([]);
   const [selectedInterestIds, setSelectedInterestIds] = useState<string[]>([]);
 
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -43,9 +48,22 @@ export default function EditProfileScreen() {
       setBio(profile.bio);
       setAge(profile.age?.toString() ?? "");
       setGender(profile.gender);
+      setAvatarUri(profile.avatar_url);
     }
     loadInterests();
   }, [profile?.id]);
+
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  }
 
   async function loadInterests() {
     try {
@@ -84,11 +102,16 @@ export default function EditProfileScreen() {
 
     setSaving(true);
     try {
+      let newAvatarUrl = profile.avatar_url;
+      if (avatarUri && avatarUri !== profile.avatar_url) {
+        newAvatarUrl = await uploadAvatar(session!.user.id, avatarUri);
+      }
       await updateProfile(profile.id, {
         display_name: displayName.trim(),
         bio: bio.trim(),
         age: parsedAge,
         gender,
+        avatar_url: newAvatarUrl,
       });
       await setProfileInterests(profile.id, selectedInterestIds);
       await refreshProfile();
@@ -112,6 +135,29 @@ export default function EditProfileScreen() {
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
       <Text className="text-2xl font-bold text-slate-800 mb-6">Edit Profile</Text>
+
+      {/* Avatar */}
+      <TouchableOpacity
+        onPress={pickImage}
+        activeOpacity={0.8}
+        className="self-center mb-6"
+      >
+        {avatarUri ? (
+          <Image
+            source={{ uri: avatarUri }}
+            className="w-24 h-24 rounded-full"
+          />
+        ) : (
+          <View className="w-24 h-24 rounded-full bg-indigo-100 items-center justify-center">
+            <Text className="text-3xl font-bold text-indigo-300">
+              {profile?.display_name?.charAt(0)?.toUpperCase() ?? "?"}
+            </Text>
+          </View>
+        )}
+        <View className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-indigo-500 items-center justify-center border-2 border-white">
+          <Ionicons name="camera" size={14} color="#ffffff" />
+        </View>
+      </TouchableOpacity>
 
       {/* Display Name */}
       <Text className="text-sm font-medium text-slate-600 mb-1">Display Name</Text>

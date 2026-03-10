@@ -53,7 +53,20 @@
 - updated_at: timestamptz (auto-updated via trigger)
 - RLS: read/insert/update own only
 
+## user_locations (implemented)
+- id: uuid, PK
+- user_id: uuid, FK → auth.users, unique, cascade delete
+- location: geography(Point, 4326) — PostGIS
+- updated_at: timestamptz
+- RLS: read/insert/update own only
+- Spatial index (GIST) for fast proximity queries
+- NEVER exposed to other users — only used server-side by discover_nearby_users()
+
+## RPC functions (implemented)
+- upsert_user_location(p_user_id, p_point): security definer, upserts user location
+- discover_nearby_users(requesting_user_id, radius_meters): returns nearby profiles with approximate distance (rounded to 50m), excludes Red status and non-discoverable users
+
 ## Critical separation
-- true coordinates are private
-- displayed map presence is obfuscated
-- discovery returns only public-safe location data
+- true coordinates are private (user_locations table, own-only RLS)
+- displayed map presence is obfuscated (Phase 5)
+- discovery returns only public-safe location data (approximate distance labels)
