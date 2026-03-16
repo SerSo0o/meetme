@@ -7,12 +7,17 @@ import {
   ScrollView,
   Alert,
   Platform,
+  TouchableOpacity,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/providers/AuthProvider";
+import { useLocation } from "@/providers/LocationProvider";
 import { getPrivacyPreferences, upsertPrivacyPreferences } from "@/lib/profile";
 
 export default function PrivacySettingsScreen() {
   const { session } = useAuth();
+  const { hasPermission, requestPermission, lastUpdate, isUpdating, refreshLocation } = useLocation();
+  const [requesting, setRequesting] = useState(false);
 
   const [showDistance, setShowDistance] = useState(true);
   const [showOnMap, setShowOnMap] = useState(true);
@@ -68,6 +73,59 @@ export default function PrivacySettingsScreen() {
       <Text className="text-sm text-slate-400 mb-8">
         Control how others see you in discovery and on the map.
       </Text>
+
+      {/* Location Access */}
+      <View className="mb-6 p-4 rounded-xl border border-slate-200 bg-slate-50">
+        <View className="flex-row items-center gap-2 mb-1">
+          <Ionicons
+            name={hasPermission ? "location" : "location-outline"}
+            size={18}
+            color={hasPermission ? "#22c55e" : "#ef4444"}
+          />
+          <Text className="text-base font-medium text-slate-800">
+            Location Access
+          </Text>
+          <View
+            className="w-2.5 h-2.5 rounded-full ml-auto"
+            style={{ backgroundColor: hasPermission ? "#22c55e" : "#ef4444" }}
+          />
+        </View>
+        <Text className="text-sm text-slate-400 mb-3">
+          {hasPermission
+            ? lastUpdate
+              ? `Active · Last updated ${lastUpdate.toLocaleTimeString()}`
+              : "Granted · Waiting for first update"
+            : "Not granted · Required for nearby discovery"}
+        </Text>
+        <TouchableOpacity
+          className={`h-10 rounded-lg items-center justify-center ${
+            hasPermission ? "bg-slate-200" : "bg-indigo-500"
+          }`}
+          onPress={async () => {
+            setRequesting(true);
+            if (hasPermission) {
+              await refreshLocation();
+            } else {
+              await requestPermission();
+            }
+            setRequesting(false);
+          }}
+          disabled={requesting || isUpdating}
+          activeOpacity={0.8}
+        >
+          {requesting || isUpdating ? (
+            <ActivityIndicator color={hasPermission ? "#64748b" : "#ffffff"} size="small" />
+          ) : (
+            <Text
+              className={`text-sm font-semibold ${
+                hasPermission ? "text-slate-600" : "text-white"
+              }`}
+            >
+              {hasPermission ? "Refresh Location" : "Grant Location Access"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       <PrivacyRow
         label="Show distance"

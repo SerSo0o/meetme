@@ -10,7 +10,8 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/providers/AuthProvider";
@@ -44,6 +45,7 @@ export default function EditProfileScreen() {
 
   useEffect(() => {
     if (profile) {
+      console.log("[edit-profile] Loading profile data, avatar_url:", profile.avatar_url);
       setDisplayName(profile.display_name);
       setBio(profile.bio);
       setAge(profile.age?.toString() ?? "");
@@ -51,7 +53,16 @@ export default function EditProfileScreen() {
       setAvatarUri(profile.avatar_url);
     }
     loadInterests();
-  }, [profile?.id]);
+  }, [profile?.id, profile?.avatar_url]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Refresh profile data when screen comes into focus
+      if (profile?.id) {
+        refreshProfile();
+      }
+    }, [])
+  );
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -103,9 +114,16 @@ export default function EditProfileScreen() {
     setSaving(true);
     try {
       let newAvatarUrl = profile.avatar_url;
+      console.log("[edit-profile] Current avatar_url:", profile.avatar_url);
+      console.log("[edit-profile] Selected avatarUri:", avatarUri);
+      
       if (avatarUri && avatarUri !== profile.avatar_url) {
+        console.log("[edit-profile] Uploading new avatar...");
         newAvatarUrl = await uploadAvatar(session!.user.id, avatarUri);
+        console.log("[edit-profile] Upload complete, new URL:", newAvatarUrl);
       }
+      
+      console.log("[edit-profile] Updating profile with avatar_url:", newAvatarUrl);
       await updateProfile(profile.id, {
         display_name: displayName.trim(),
         bio: bio.trim(),
@@ -113,10 +131,14 @@ export default function EditProfileScreen() {
         gender,
         avatar_url: newAvatarUrl,
       });
+      console.log("[edit-profile] Profile updated, saving interests...");
       await setProfileInterests(profile.id, selectedInterestIds);
+      console.log("[edit-profile] Refreshing profile...");
       await refreshProfile();
+      console.log("[edit-profile] Profile refreshed, navigating back");
       router.back();
     } catch (e: any) {
+      console.error("[edit-profile] Save failed:", e);
       const msg = e.message || "Failed to save.";
       Platform.OS === "web" ? alert(msg) : Alert.alert("Error", msg);
     } finally {
@@ -145,7 +167,8 @@ export default function EditProfileScreen() {
         {avatarUri ? (
           <Image
             source={{ uri: avatarUri }}
-            className="w-24 h-24 rounded-full"
+            style={{ width: 96, height: 96, borderRadius: 48 }}
+            resizeMode="cover"
           />
         ) : (
           <View className="w-24 h-24 rounded-full bg-indigo-100 items-center justify-center">

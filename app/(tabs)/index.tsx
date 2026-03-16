@@ -5,19 +5,23 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
+  TouchableOpacity,
+  Linking,
+  Platform,
 } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/providers/AuthProvider";
 import { useLocation } from "@/providers/LocationProvider";
+import { isSecureContext } from "@/lib/location";
 import { fetchNearbyUsers, type NearbyUser } from "@/lib/discovery";
 import { DiscoveryCard } from "@/components/DiscoveryCard";
 import { ProfileSheet } from "@/components/ProfileSheet";
 
 export default function NearbyScreen() {
   const { session } = useAuth();
-  const { hasPermission, isUpdating } = useLocation();
+  const { hasPermission, isUpdating, requestPermission } = useLocation();
+  const [requesting, setRequesting] = useState(false);
   const [users, setUsers] = useState<NearbyUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,7 +64,38 @@ export default function NearbyScreen() {
     if (index === -1) setSelectedUser(null);
   }, []);
 
-  // Permission not granted
+  async function handleGrantAccess() {
+    setRequesting(true);
+    const granted = await requestPermission();
+    if (granted) {
+      setLoading(true);
+      await loadNearby();
+    }
+    setRequesting(false);
+  }
+
+  const secure = isSecureContext();
+
+  // Non-HTTPS connection (LAN IP) — geolocation unavailable
+  if (!secure) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white px-8">
+        <Ionicons name="warning-outline" size={48} color="#eab308" />
+        <Text className="text-lg font-semibold text-slate-700 mt-4 text-center">
+          Secure connection required
+        </Text>
+        <Text className="text-sm text-slate-400 mt-2 text-center leading-5">
+          Location only works on HTTPS or localhost.{"\n\n"}
+          On this device, open:{"\n"}
+          <Text className="font-mono text-indigo-500">http://localhost:8081</Text>
+          {"\n\n"}
+          On other devices, location will work once the app is deployed with HTTPS or run natively.
+        </Text>
+      </View>
+    );
+  }
+
+  // Permission denied — on iOS must open Settings
   if (hasPermission === false) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-8">
@@ -69,8 +104,49 @@ export default function NearbyScreen() {
           Location access needed
         </Text>
         <Text className="text-sm text-slate-400 mt-2 text-center">
-          Meet Me needs your location to find people nearby. Please enable location in your device settings.
+          Meet Me needs your location to find people nearby.{Platform.OS === "ios" ? "\nPlease enable it in Settings." : ""}
         </Text>
+        <TouchableOpacity
+          className="mt-6 h-12 px-8 bg-indigo-500 rounded-xl items-center justify-center"
+          onPress={Platform.OS === "ios" ? () => Linking.openSettings() : handleGrantAccess}
+          disabled={requesting}
+          activeOpacity={0.8}
+        >
+          {requesting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text className="text-white text-base font-semibold">
+              {Platform.OS === "ios" ? "Open Settings" : "Grant Location Access"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Permission not yet determined
+  if (hasPermission === null) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white px-8">
+        <Ionicons name="location-outline" size={48} color="#94a3b8" />
+        <Text className="text-lg font-semibold text-slate-700 mt-4 text-center">
+          Enable location
+        </Text>
+        <Text className="text-sm text-slate-400 mt-2 text-center">
+          Tap below to allow Meet Me to find people near you.
+        </Text>
+        <TouchableOpacity
+          className="mt-6 h-12 px-8 bg-indigo-500 rounded-xl items-center justify-center"
+          onPress={handleGrantAccess}
+          disabled={requesting}
+          activeOpacity={0.8}
+        >
+          {requesting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text className="text-white text-base font-semibold">Grant Location Access</Text>
+          )}
+        </TouchableOpacity>
       </View>
     );
   }
@@ -105,9 +181,8 @@ export default function NearbyScreen() {
       <FlatList
         data={users}
         keyExtractor={(item) => item.profile_id}
-        numColumns={2}
-        contentContainerStyle={{ padding: 18, paddingTop: 8 }}
-        columnWrapperStyle={{ gap: 12, marginBottom: 12 }}
+        contentContainerStyle={{ padding: 16, paddingTop: 8 }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
         }

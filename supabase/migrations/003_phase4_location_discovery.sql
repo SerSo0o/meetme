@@ -23,7 +23,7 @@ create policy "Users can insert their own location"
   to authenticated
   with check (auth.uid() = user_id);
 
-create policy "Users can update their own location"
+create policy "Users can update their own location" 
   on public.user_locations for update
   to authenticated
   using (auth.uid() = user_id)

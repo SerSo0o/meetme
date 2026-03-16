@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,11 +59,19 @@ export default function ProfileScreen() {
       {/* Avatar + Info */}
       <View className="items-center mb-6">
         <View className="relative mb-4">
-          <View className="w-20 h-20 rounded-full bg-indigo-100 items-center justify-center">
-            <Text className="text-2xl font-bold text-indigo-500">
-              {profile?.display_name?.charAt(0)?.toUpperCase() ?? "?"}
-            </Text>
-          </View>
+          {profile?.avatar_url ? (
+            <Image
+              source={{ uri: profile.avatar_url }}
+              style={{ width: 80, height: 80, borderRadius: 40 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View className="w-20 h-20 rounded-full bg-indigo-100 items-center justify-center">
+              <Text className="text-2xl font-bold text-indigo-500">
+                {profile?.display_name?.charAt(0)?.toUpperCase() ?? "?"}
+              </Text>
+            </View>
+          )}
           <View
             className="absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-white"
             style={{ backgroundColor: STATUS_COLORS[currentStatus] }}

@@ -8,6 +8,7 @@ import {
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { useAuth } from "./AuthProvider";
+import * as Location from "expo-location";
 import {
   requestLocationPermission,
   getCurrentLocation,
@@ -19,6 +20,7 @@ type LocationState = {
   isUpdating: boolean;
   lastUpdate: Date | null;
   refreshLocation: () => Promise<void>;
+  requestPermission: () => Promise<boolean>;
 };
 
 const LocationContext = createContext<LocationState>({
@@ -26,6 +28,7 @@ const LocationContext = createContext<LocationState>({
   isUpdating: false,
   lastUpdate: null,
   refreshLocation: async () => {},
+  requestPermission: async () => false,
 });
 
 export function useLocation() {
@@ -57,8 +60,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function init() {
+  async function requestPermission(): Promise<boolean> {
     const granted = await requestLocationPermission();
+    setHasPermission(granted);
+    if (granted) {
+      await updateLocation();
+    }
+    return granted;
+  }
+
+  // Check existing permission on mount (don't trigger the native dialog)
+  async function checkExistingPermission() {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    const granted = status === "granted";
     setHasPermission(granted);
     if (granted) {
       await updateLocation();
@@ -67,10 +81,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.user.id) return;
-    init();
+
+    checkExistingPermission();
 
     // Periodic updates every 15 min
-    intervalRef.current = setInterval(updateLocation, UPDATE_INTERVAL_MS);
+    intervalRef.current = setInterval(() => {
+      if (hasPermission) updateLocation();
+    }, UPDATE_INTERVAL_MS);
 
     // Also update on app foreground
     const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
@@ -87,7 +104,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
   return (
     <LocationContext.Provider
-      value={{ hasPermission, isUpdating, lastUpdate, refreshLocation: updateLocation }}
+      value={{ hasPermission, isUpdating, lastUpdate, refreshLocation: updateLocation, requestPermission }}
     >
       {children}
     </LocationContext.Provider>

@@ -20,7 +20,21 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Meet Me needs your location to find people nearby.",
+          "locationWhenInUsePermission": "Meet Me needs your location to find people nearby."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Meet Me needs access to your photos to set your profile picture.",
+          "cameraPermission": "Meet Me needs access to your camera to take a profile picture."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
