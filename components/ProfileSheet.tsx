@@ -1,6 +1,9 @@
-import { View, Text, ScrollView, Image } from "react-native";
+import { useState } from "react";
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import type { NearbyUser } from "@/lib/discovery";
+import { createLike } from "@/lib/likes";
 import { distanceLabel } from "@/utils/distance";
 import { colors } from "@/constants/theme";
 
@@ -12,11 +15,33 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 type ProfileSheetProps = {
   user: NearbyUser;
+  isLiked?: boolean;
+  onLikeChange?: (liked: boolean, matchId?: string) => void;
 };
 
-export function ProfileSheet({ user }: ProfileSheetProps) {
+export function ProfileSheet({ user, isLiked = false, onLikeChange }: ProfileSheetProps) {
+  const [liked, setLiked] = useState(isLiked);
+  const [liking, setLiking] = useState(false);
   const hasAvatar = !!user.avatar_url;
   const statusInfo = STATUS_LABELS[user.status] ?? STATUS_LABELS.red;
+
+  async function handleLike() {
+    if (liked || liking) return;
+    setLiking(true);
+    try {
+      const result = await createLike(user.user_id);
+      setLiked(true);
+      onLikeChange?.(true, result.match_id ?? undefined);
+      
+      if (result.is_mutual && result.match_id) {
+        router.push(`/chat/${result.match_id}` as any);
+      }
+    } catch (e) {
+      console.warn("Failed to like:", e);
+    } finally {
+      setLiking(false);
+    }
+  }
 
   return (
     <ScrollView
@@ -93,6 +118,33 @@ export function ProfileSheet({ user }: ProfileSheetProps) {
             </Text>
           </View>
         ) : null}
+
+        {/* Like button */}
+        <TouchableOpacity
+          onPress={handleLike}
+          disabled={liked || liking}
+          activeOpacity={0.8}
+          className="mt-6 h-14 rounded-2xl flex-row items-center justify-center"
+          style={{ backgroundColor: liked ? "#fee2e2" : "#6366f1" }}
+        >
+          {liking ? (
+            <ActivityIndicator size="small" color={liked ? "#ef4444" : "#ffffff"} />
+          ) : (
+            <>
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={22}
+                color={liked ? "#ef4444" : "#ffffff"}
+              />
+              <Text
+                className="ml-2 text-base font-semibold"
+                style={{ color: liked ? "#ef4444" : "#ffffff" }}
+              >
+                {liked ? "Liked" : "Like"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );

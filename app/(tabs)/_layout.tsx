@@ -47,9 +47,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="matches"
         options={{
-          title: "Matches",
+          title: "Meet Me",
           tabBarIcon: ({ color, size }: TabIconProps) => (
-            <Ionicons name="chatbubbles-outline" size={size} color={color} />
+            <Ionicons name="heart-outline" size={size} color={color} />
           ),
         }}
       />

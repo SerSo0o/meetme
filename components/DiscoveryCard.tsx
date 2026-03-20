@@ -1,6 +1,9 @@
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { useState } from "react";
+import { View, Text, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import type { NearbyUser } from "@/lib/discovery";
+import { createLike } from "@/lib/likes";
 import { distanceLabel } from "@/utils/distance";
 import { colors } from "@/constants/theme";
 
@@ -13,11 +16,34 @@ const STATUS_INFO: Record<string, { label: string; color: string }> = {
 type DiscoveryCardProps = {
   user: NearbyUser;
   onPress: () => void;
+  isLiked?: boolean;
+  onLikeChange?: (liked: boolean, matchId?: string) => void;
 };
 
-export function DiscoveryCard({ user, onPress }: DiscoveryCardProps) {
+export function DiscoveryCard({ user, onPress, isLiked = false, onLikeChange }: DiscoveryCardProps) {
+  const [liked, setLiked] = useState(isLiked);
+  const [liking, setLiking] = useState(false);
   const hasAvatar = !!user.avatar_url;
   const status = STATUS_INFO[user.status] ?? STATUS_INFO.red;
+
+  async function handleLike() {
+    if (liked || liking) return;
+    setLiking(true);
+    try {
+      const result = await createLike(user.user_id);
+      setLiked(true);
+      onLikeChange?.(true, result.match_id ?? undefined);
+      
+      if (result.is_mutual && result.match_id) {
+        // Navigate to chat on match
+        router.push(`/chat/${result.match_id}` as any);
+      }
+    } catch (e) {
+      console.warn("Failed to like:", e);
+    } finally {
+      setLiking(false);
+    }
+  }
 
   return (
     <TouchableOpacity
@@ -84,21 +110,42 @@ export function DiscoveryCard({ user, onPress }: DiscoveryCardProps) {
       {/* Info section below photo */}
       <View className="px-4 py-3">
         {/* Distance + Gender row */}
-        <View className="flex-row items-center gap-4">
-          <View className="flex-row items-center gap-1.5">
-            <Ionicons name="location-outline" size={15} color="#64748b" />
-            <Text className="text-sm font-medium text-slate-500">
-              {distanceLabel(user.distance_meters)}
-            </Text>
-          </View>
-          {user.gender ? (
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-4">
             <View className="flex-row items-center gap-1.5">
-              <Ionicons name="person-outline" size={14} color="#64748b" />
-              <Text className="text-sm text-slate-500 capitalize">
-                {user.gender}
+              <Ionicons name="location-outline" size={15} color="#64748b" />
+              <Text className="text-sm font-medium text-slate-500">
+                {distanceLabel(user.distance_meters)}
               </Text>
             </View>
-          ) : null}
+            {user.gender ? (
+              <View className="flex-row items-center gap-1.5">
+                <Ionicons name="person-outline" size={14} color="#64748b" />
+                <Text className="text-sm text-slate-500 capitalize">
+                  {user.gender}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Like button */}
+          <TouchableOpacity
+            onPress={handleLike}
+            disabled={liked || liking}
+            activeOpacity={0.7}
+            className="w-12 h-12 rounded-full items-center justify-center"
+            style={{ backgroundColor: liked ? "#fee2e2" : "#f1f5f9" }}
+          >
+            {liking ? (
+              <ActivityIndicator size="small" color="#ef4444" />
+            ) : (
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={24}
+                color={liked ? "#ef4444" : "#64748b"}
+              />
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Bio preview */}
